@@ -1,0 +1,1 @@
+{"decisions":[["1",1],["2",1],["3",1],["4",0]],"freeze_id":7,"issue_id":"v1:LEG-04:west:7","plate_id":"LEG-04","protocol":{"a":{"scheme":"spray-A","station":"west"},"b":{"scheme":"spray-B","station":"east"}},"slots":["1","2","3","4"],"station_id":"west","version":1}
