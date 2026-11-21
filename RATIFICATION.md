@@ -12,6 +12,20 @@
 
 在 `blindplate.receipt.admit` 提供 `admit_correction(db, payload)`，返回 `(pack_receipt_id, pack_id, acknowledgement)`。首收固定原件字节及回执。中心可独立接纳合规的包，接受时允许 V1 基线站件或前置包尚未到齐。等价重投返首执，同号异文拒收并保留首次记录。对象字段顺序和 JSON 空白不改变同一包的业务值。勘误包正文须承载离线核对所需的公共证据。交付时说明所用正文格式及等价规则，供中心独立读件。
 
+### 勘误包正文格式
+
+正文为 UTF-8 JSON 字节（规范发行时键排序、无空白并以换行结尾），顶层字段固定为：
+
+| 字段 | 内容 |
+| --- | --- |
+| `version` | 整数 `1` |
+| `kind` | 固定文本 `correction-pack` |
+| `pack_id` | 包号文本，形如 `pack:{板}:{站}:{冻结号}:{站内序号}` |
+| `base_issue` | 基线 V1 站件的完整正文（即 `encode_v1` 的对象值），内嵌板、站、冻结、协议、清册与基线槽判读 |
+| `changes` | 非空数组，每行 `[槽号, 前置包号或 null, 整数判读]`，按清册位置排序，同包内槽号互异 |
+
+包号中的板、站、冻结身份必须与 `base_issue` 一致，站内序号是站端正 SQLite 整数。正文只含公共证据，不含仪器名、出处文本或任何私有判读号；这些只留在站库的 `correction_pack_slots` 中。中心读件时逐字段校验结构、二值取值、槽属清册、包号身份与前置引用，非法件报 `ValueError` 且不入账。等价规则与 V1 一致：以解析后的完整业务值比较，JSON 键序与空白差异视为同一包；同包号业务值不同即同号异文，拒收并保留首件。
+
 在 `blindplate.review.signing` 提供 `ratify(db, report_id, pack_receipt_ids)`。`report_id` 指已签 V1 报告，`pack_receipt_ids` 是非空列表或元组，元素为互异的勘误包实收号。所有包必须来自同一站，并且适用于原报告实际使用的该站 V1 原件。核对原件号和 V1 业务内容，允许 V1 已支持的等价重投。中心只使用本次选中的包。已实收但未选的包没有批准资格。选包缺前置、同一槽的同一个前身被两个选包消耗，或无法让每个所选包整包重放时，整次拒签。相同二值无法消除前身冲突。合法组合须与收包顺序及列表顺序无关。另一站取原报告绑定的原槽图，比较方向、分歧槽顺序和精确上尾概率沿用 V1。
 
 `ratify` 与 `blindplate.review.readback.read_ratification(db, ratification_id)` 均返回字典，键如下。
@@ -43,4 +57,4 @@
 
 基线命令 `python3 -B -m examples.correction_case` 对照两段 V1 历史。一段先把两槽改为 1 再回改首槽，另一段直接把第二槽改为 1。两段发行的 V1 字节相同，中心签出的替换报告均只能反映相同的最终槽图。
 
-交付时以 `.pointwise-runtime.json` 的现有版本 1、`cli` 清单接入追认。`setup` 是准备命令参数数组列表。`verify` 和 `demo` 各是一个命令参数数组。核验须运行原回归并实际检查离线追认和拒签，失败须以非零码退出。演示须展示关站后的选包签报及重开复领。
+交付时以 `.pointwise-runtime.json` 的现有版本 1、`cli` 清单接入追认。`setup` 是准备命令参数数组列表。`verify` 和 `demo` 各是一个命令参数数组。核验运行 `python3 -B check_project.py`：先跑 `tests` 包完整原回归（含 `tests/test_ratification.py` 的离线追认与拒签用例），再实际运行 `examples.ratification_case` 的关站追认场景，失败以非零码退出。演示 `python3 -B -m examples.ratification_case` 展示关站后的选包签报、拒签及重开复领。

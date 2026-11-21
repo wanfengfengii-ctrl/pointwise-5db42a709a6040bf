@@ -9,9 +9,10 @@
 ```sh
 python3 -B check_project.py
 python3 -B -m examples.shift
+python3 -B -m examples.ratification_case
 ```
 
-演示会在临时目录创建两座站库和一座中心库，订正一条错录，按确切冻结发行，关闭站库，反序实收和签报，最后重开中心领取。四槽工单的甲站检出槽 1、2、3，乙站仅检出槽 4。四个分歧槽中至少三个朝向甲的等概率情形有五种，共十六种，报告概率为 `5/16`。
+演示会在临时目录创建两座站库和一座中心库，订正一条错录，按确切冻结发行，关闭站库，反序实收和签报，最后重开中心领取。四槽工单的甲站检出槽 1、2、3，乙站仅检出槽 4。四个分歧槽中至少三个朝向甲的等概率情形有五种，共十六种，报告概率为 `5/16`。`examples.ratification_case` 演示关站后的勘误整包离线追认：乱序实收、只选 Q 拒签、选 P 得 `(1,1)` 与 `1/4`、选 P+Q 或 P+R 得 `(0,1)` 与 `1/2`、三包共耗前身拒签，并在重开后按号复领。
 
 ## 一天的交班
 
@@ -25,6 +26,10 @@ python3 -B -m examples.shift
 | 实收 | `receipt.admit.admit(db, payload)` | 离线验收，返回含 `receipt_id` 的原首执。`receipt.ledger.get_received_issue` 可按实收号取实际原件。 |
 | 签报 | `review.signing.sign(db, first_receipt_id, second_receipt_id)` | 按固定角色和实物槽核算双件，原子写入 `PairedReport` 与回执。 |
 | 复领 | `review.readback.read(db, report_id)` | 重开后按号返回概率、分歧槽、双实收出处和签报回执的原存值。 |
+| 勘误整包发行 | `issue.release.issue_correction(db, base_issue_id, changes)` | 绑定确切 V1 基线站件与每槽实际前身发行整包，包号独立、原字节可按号复领；仪器出处留站。`issue.pickup.pickup_correction` 按包号领取。 |
+| 勘误整包实收 | `receipt.admit.admit_correction(db, payload)` | 离线校验整包正文，等价重投返首执，同号异文拒收。 |
+| 追认签报 | `review.signing.ratify(db, report_id, pack_receipt_ids)` | 仅用本次所选实收包整包重放一站勘误，原子写入追认报告与回执；前置缺失、前身共耗或无法整包重放均拒签。 |
+| 追认复领 | `review.readback.read_ratification(db, ratification_id)` | 重开后按追认报告号返回槽图、分歧槽、精确概率与所选实收号。追认接口与正文格式见 `RATIFICATION.md`。 |
 
 各模块位于 `blindplate` 命名空间下。用 `plate.protocol.build_protocol(a_station, a_scheme, b_station, b_scheme)` 取得固定比较方向。板号、站别、方案、槽号、仪器名和出处使用非空可打印文本，首尾不留空白。一块板有一至八个互异确认槽，顺序来自工单。两站使用不同站别。判读严格使用整数 `0` 或 `1`。库内号码为正的 SQLite 整数，站件号为带板、站和冻结身份的 V1 文本。
 
